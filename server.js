@@ -20,10 +20,13 @@ sqlConnect.connect((err)=>{
     }
 });
 
+
+// endpoint route for home
 app.get("/",(req,res)=>{
     res.status(200).send("Welcome to the server")
 })
 
+// to get all students
 app.get("/students",(req,res)=>{
     sqlConnect.query("SELECT * FROM studentRecords", (err,rows,fields)=>{
         if(err){
@@ -39,6 +42,23 @@ app.get("/students",(req,res)=>{
     })
 });
 
+// to get all tutors
+app.get("/tutors", (req,res)=>{
+    sqlConnect.query(`SELECT * FROM tutorRecords`, (err,rows,fields)=>{
+        if(err){
+            res.status(404).json({
+                message : err.message
+            })
+        }else{
+            res.status(200).json({
+                data : rows
+            })
+        }
+    })
+});
+
+
+//to get One student
 app.get("/students/:id", (req,res)=>{
     let id = req.params.id
     sqlConnect.query(`SELECT * FROM studentRecords WHERE id=${id}`, (err,rows,fields)=>{
@@ -55,6 +75,25 @@ app.get("/students/:id", (req,res)=>{
     })
 });
 
+// to get one tutor
+app.get("/tutors/:id", (req,res)=>{
+    let id = req.params.id
+    sqlConnect.query(`SELECT * FROM tutorRecords WHERE id=${id}`, (err,rows,fields)=>{
+        if(err){
+            res.status(404).json({
+                message : err.message
+            })
+        }else{
+            res.status(200).json({
+                message : `the Student with id: ${id} is`,
+                data : rows
+            })
+        }
+    })
+});
+
+
+// delete one student
 app.delete("/students/:id", (req,res)=>{
     let id = req.params.id
     sqlConnect.query(`DELETE FROM studentRecords WHERE id=${id}`, (err,rows,fields)=>{
@@ -70,6 +109,24 @@ app.delete("/students/:id", (req,res)=>{
     })
 });
 
+
+// delete one tutor
+app.delete("/tutors/:id", (req,res)=>{
+    let id = req.params.id
+    sqlConnect.query(`DELETE FROM tutorRecords WHERE id=${id}`, (err,rows,fields)=>{
+        if(!err){
+            res.status(200).json({
+                message : `Tutor with id: ${id} has been deleted`,
+            })
+        }else{
+            res.status(404).json({
+                message : err.message
+            })
+        }
+    })
+});
+
+// create new students
 app.post("/students", (req,res)=>{
     const body = req.body
     const sql = `SET @id=?;SET @name=?;SET @phoneNumber=?;SET @email=?;SET @password=?;
@@ -90,9 +147,62 @@ app.post("/students", (req,res)=>{
     })
 });
 
+// create new tutor
+app.post("/tutors", (req,res)=>{
+    let body = req.body;
+    let sql = `SET @id=?;SET @name=?; SET @phoneNumber=?; SET @course=?;SET @email=?;  SET @password=?;
+    CALL tutorEdit(@id,@name,@phoneNumber,@course,@email,@password);`;
+    sqlConnect.query(sql, [body.id,body.name,body.phoneNumber,body.course,body.email,body.password], (err,rows,fields)=>{
+        if(err){
+            console.log(err.message)
+        }else{
+            rows.forEach((item)=>{
+                if(item.constructor == Array){
+                    res.status(200).json({
+                        message : "Successfully created new record with the id of " + item[0].id
+                    })
+                }
+            })
+        }
+    })
+})
 
 
+// update student
+app.put("/students", (req,res)=>{
+    let body = req.body;
+    let sql = `SET @id=?; SET @name=?; SET @phoneNumber=?; SET @email=?; SET @password=?;
+    CALL addOredit( @id, @name, @phoneNumber,@email, @password);`;
+    sqlConnect.query(sql,[body.id,body.name,body.phoneNumber,body.email,body.password], (err,rows,fields)=>{
+        if(!err){
+            res.status(200).json({
+                message: "Updated successfully.",
+            })
+        }else{
+            res.status(404).json({
+                message: err.message
+            })
+        }
+    })
+});
 
+// update a tutor
+app.put("/tutors", (req,res)=>{
+    let body = req.body;
+    let sql = `SET @id=?; SET @name=?; SET @phoneNumber=?; SET @course=?; SET @email=?; SET @password=?;
+    CALL tutorEdit( @id, @name, @phoneNumber,@course,@email, @password);`;
+    sqlConnect.query(sql,[body.id,body.name,body.phoneNumber,body.course,body.email,body.password], (err,rows,fields)=>{
+        if(!err){
+            res.status(200).json({
+                message: "Updated successfully.",
+            })
+        }else{
+            res.status(404).json({
+                message: err.message
+            })
+        }
+    })
+});
 
 
 app.listen(port, ()=>{
